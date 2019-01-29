@@ -266,3 +266,4 @@ class PriorsEnv():
                               aux_shape)[np.max([0, len(stim_pos)-per]):]
         an.plot_learning(perf, ev, stim_pos, action)
         self.perf_fig.canvas.draw()
+        print('--------------------')

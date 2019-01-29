@@ -27,7 +27,7 @@ def plot_learning(performance, evidence, stim_position, action):
                                        mode='valid')
     plt.plot(performance_smoothed, color=(0.39, 0.39, 0.39), lw=0.5,
              label='RNN perf. (' + str(round(RNN_perf, 3)) + ')')
-
+    print('RNN perf: ' + str(round(RNN_perf, 3)))
     # plot ideal observer performance
     io_perf_smoothed = np.convolve(np.mean(io_performance, axis=0),
                                    np.ones((w_conv,))/w_conv,
@@ -63,10 +63,10 @@ def plot_psychometric_curves(evidence, performance, action,
     before it is called.
     """
     # build the mat that indicates the current block
-    rep_prob = build_block_mat(evidence.shape, blk_dur)
+    blocks = build_block_mat(evidence.shape, blk_dur)
 
     # repeating probs. values
-    probs_vals = np.unique(rep_prob)
+    probs_vals = np.unique(blocks)
     assert len(probs_vals) <= 2
     colors = [[1, 0, 0], [0, 0, 1]]
     if figs:
@@ -83,7 +83,7 @@ def plot_psychometric_curves(evidence, performance, action,
         ut.rm_lines()
     for ind_blk in range(len(probs_vals)):
         # filter data
-        inds = (rep_prob == probs_vals[ind_blk])
+        inds = (blocks == probs_vals[ind_blk])
         evidence_block = evidence[inds]
         performance_block = performance[inds]
         action_block = action[inds]
@@ -184,7 +184,7 @@ def get_psyCho_curves_data(performance, evidence, action, prob,
     data['popt_repProb_hits_'+str(prob)] = popt
     data['pcov_repProb_hits_'+str(prob)] = pcov
     data['av_repProb_hits_'+str(prob)] = av_data
-
+    print('bias: ' + str(round(popt[1], 3)))
     # 4. REPEATING EVIDENCE VS PROB. REPEATING
     # (conditionated on previous wrong)
     # fitting
@@ -445,7 +445,7 @@ if __name__ == '__main__':
     # folder where data will be saved
     main_folder = '/home/molano/priors_project/priors/'
     # num trials file
-    num_tr = 250000
+    num_tr = 280000
     # worker
     worker = 0
     test = ''  # '/test'
