@@ -87,3 +87,37 @@ def main_priors(load_model=False, train=True, gamma=.8, up_net=5,
             thread.start()
             worker_threads.append(thread)
         coord.join(worker_threads)
+
+
+if __name__ == '__main__':
+    # experiment duration
+    exp_dur = 10**6
+    # num steps per trial
+    trial_dur = 10
+    # rewards given for: stop fixating, keep fixating, correct, wrong
+    rewards = (-0.1, 0.0, 1.0, -1.0)
+    # number of trials per blocks
+    block_dur = 200
+    # stimulus evidence
+    stim_ev = 0.5
+    # prob. of repeating the stimuli in the positions of previous trial
+    rep_prob = [0.2, 0.8]
+    # discount factor
+    gamma = 0.8
+    # learning rate
+    lr = 1e-3
+    # num units in the network
+    num_units = 32
+    # trials to updated the network weights
+    up_net = 5
+    # network units
+    net = 'ugru'
+    # instance
+    inst = 1
+    # folder where data will be saved
+    main_folder = '/home/molano/priors_project/priors/'
+    main_priors(load_model=False, train=True, gamma=gamma, up_net=up_net,
+                trial_dur=trial_dur, rep_prob=rep_prob, exp_dur=exp_dur,
+                rewards=rewards, block_dur=block_dur,
+                num_units=num_units, stim_ev=stim_ev, network=net,
+                learning_rate=lr, instance=inst, main_folder=main_folder)

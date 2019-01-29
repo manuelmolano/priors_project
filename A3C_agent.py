@@ -154,114 +154,113 @@ class Worker():
         aux = len(rollout)
         return v_l / aux, p_l / aux, e_l / aux, g_n, v_n
 
+    def work(self, gamma, sess, coord, saver, train, exp_dur):
+        eps_count = sess.run(self.global_epss)
+        num_eps_tr_stats = int(1000/self.env.upd_net)
+        num_epss_end = int(exp_dur/self.env.upd_net)
+        num_epss_save_model = int(5000/self.env.upd_net)
+        total_steps = 0
+        print("Starting worker " + str(self.number))
+        # get first state
+        s = self.env.new_trial()
+        with sess.as_default(), sess.graph.as_default():
+            while not coord.should_stop():
+                sess.run(self.update_local_ops)
+                eps_buffer = []
+                eps_values = []
+                eps_reward = 0
+                eps_step_count = 0
+                d = False
+                r = 0
+                a = 0
+                rnn_state = self.local_AC.st_init
+                while not d:
+                    if self.network == 'lstm':
+                        feed_dict = {
+                                    self.local_AC.state: [s],
+                                    self.local_AC.prev_rewards: [[r]],
+                                    self.local_AC.prev_actions: [a],
+                                    self.local_AC.state_in[0]: rnn_state[0],
+                                    self.local_AC.state_in[1]: rnn_state[1]}
+                    elif (self.network == 'relu') or\
+                         (self.network == 'gru') or\
+                         (self.network == 'ugru'):
+                        feed_dict = {
+                                    self.local_AC.st: [s],
+                                    self.local_AC.prev_rewards: [[r]],
+                                    self.local_AC.prev_actions: [a],
+                                    self.local_AC.st_in: rnn_state}
 
-def work(self, gamma, sess, coord, saver, train, exp_dur):
-    eps_count = sess.run(self.global_epss)
-    num_eps_tr_stats = int(1000/self.env.upd_net)
-    num_epss_end = int(exp_dur/self.env.upd_net)
-    num_epss_save_model = int(5000/self.env.upd_net)
-    total_steps = 0
-    print("Starting worker " + str(self.number))
-    # get first state
-    s = self.env.new_trial()
-    with sess.as_default(), sess.graph.as_default():
-        while not coord.should_stop():
-            sess.run(self.update_local_ops)
-            eps_buffer = []
-            eps_values = []
-            eps_reward = 0
-            eps_step_count = 0
-            d = False
-            r = 0
-            a = 0
-            rnn_state = self.local_AC.st_init
-            while not d:
-                if self.network == 'lstm':
-                    feed_dict = {
-                                self.local_AC.state: [s],
-                                self.local_AC.prev_rewards: [[r]],
-                                self.local_AC.prev_actions: [a],
-                                self.local_AC.state_in[0]: rnn_state[0],
-                                self.local_AC.state_in[1]: rnn_state[1]}
-                elif (self.network == 'relu') or\
-                     (self.network == 'gru') or\
-                     (self.network == 'ugru'):
-                    feed_dict = {
-                                self.local_AC.st: [s],
-                                self.local_AC.prev_rewards: [[r]],
-                                self.local_AC.prev_actions: [a],
-                                self.local_AC.st_in: rnn_state}
+                    # Take an action using probs from policy network output
+                    a_dist, v, rnn_state_new = sess.run(
+                                                        [self.local_AC.policy,
+                                                         self.local_AC.value,
+                                                         self.local_AC.st_out],
+                                                        feed_dict=feed_dict)
 
-                # Take an action using probs from policy network output
-                a_dist, v, rnn_state_new = sess.run(
-                                                    [self.local_AC.policy,
-                                                     self.local_AC.value,
-                                                     self.local_AC.st_out],
-                                                    feed_dict=feed_dict)
+                    a = np.random.choice(a_dist[0], p=a_dist[0])
+                    a = np.argmax(a_dist == a)
+                    rnn_state = rnn_state_new
+                    # new_state, reward, update_net, new_trial
+                    s1, r, d, nt = self.env.step(a)
+                    # save samples for training the network later
+                    eps_buffer.append([s, a, r, v[0, 0]])
+                    eps_values.append(v[0, 0])
+                    eps_reward += r
+                    total_steps += 1
+                    eps_step_count += 1
+                    s = s1
 
-                a = np.random.choice(a_dist[0], p=a_dist[0])
-                a = np.argmax(a_dist == a)
-                rnn_state = rnn_state_new
-                # new_state, reward, update_net, new_trial
-                s1, r, d, nt = self.env.step(a)
-                # save samples for training the network later
-                eps_buffer.append([s, a, r, v[0, 0]])
-                eps_values.append(v[0, 0])
-                eps_reward += r
-                total_steps += 1
-                eps_step_count += 1
-                s = s1
+                self.eps_rewards.append(eps_reward)
+                self.eps_mean_values.append(np.mean(eps_values))
 
-            self.eps_rewards.append(eps_reward)
-            self.eps_mean_values.append(np.mean(eps_values))
+                # Update the network using the experience buffer
+                # at the end of the episode
+                if len(eps_buffer) != 0 and train:
+                    v_l, p_l, e_l, g_n, v_n = \
+                        self.train(eps_buffer, sess, gamma, 0.0)
 
-            # Update the network using the experience buffer
-            # at the end of the episode
-            if len(eps_buffer) != 0 and train:
-                v_l, p_l, e_l, g_n, v_n = \
-                    self.train(eps_buffer, sess, gamma, 0.0)
+                # Periodically save model parameters and summary statistics.
+                if eps_count % num_eps_tr_stats == 0 and eps_count != 0:
+                    if eps_count % num_epss_save_model == 0 and\
+                       self.name == 'worker_0' and\
+                       train and\
+                       len(self.eps_rewards) != 0:
+                        saver.save(sess, self.model_path +
+                                   '/model-' + str(eps_count) + '.cptk')
+                    mean_reward = np.mean(self.eps_rewards[-10:])
+                    mean_value = np.mean(self.eps_mean_values[-10:])
+                    summary = tf.Summary()
+                    summary.value.add(tag='Perf/Reward',
+                                      simple_value=float(mean_reward))
+                    summary.value.add(tag='Perf/Value',
+                                      simple_value=float(mean_value))
 
-            # Periodically save model parameters and summary statistics.
-            if eps_count % num_eps_tr_stats == 0 and eps_count != 0:
-                if eps_count % num_epss_save_model == 0 and\
-                   self.name == 'worker_0' and\
-                   train and\
-                   len(self.eps_rewards) != 0:
-                    saver.save(sess, self.model_path +
-                               '/model-' + str(eps_count) + '.cptk')
-                mean_reward = np.mean(self.eps_rewards[-10:])
-                mean_value = np.mean(self.eps_mean_values[-10:])
-                summary = tf.Summary()
-                summary.value.add(tag='Perf/Reward',
-                                  simple_value=float(mean_reward))
-                summary.value.add(tag='Perf/Value',
-                                  simple_value=float(mean_value))
+                    performance_aux = np.vstack(np.array(self.env.perf_mat))
 
-                performance_aux = np.vstack(np.array(self.env.perf_mat))
+                    for ind_crr in range(performance_aux.shape[1]):
+                        mean_performance = np.mean(performance_aux[:, ind_crr])
+                        summary.value.add(tag='Perf/Perf_' + str(ind_crr),
+                                          simple_value=float(mean_performance))
 
-                for ind_crr in range(performance_aux.shape[1]):
-                    mean_performance = np.mean(performance_aux[:, ind_crr])
-                    summary.value.add(tag='Perf/Perf_' + str(ind_crr),
-                                      simple_value=float(mean_performance))
+                    if train:
+                        summary.value.add(tag='Losses/Value Loss',
+                                          simple_value=float(v_l))
+                        summary.value.add(tag='Losses/Policy Loss',
+                                          simple_value=float(p_l))
+                        summary.value.add(tag='Losses/Entropy',
+                                          simple_value=float(e_l))
+                        summary.value.add(tag='Losses/Grad Norm',
+                                          simple_value=float(g_n))
+                        summary.value.add(tag='Losses/Var Norm',
+                                          simple_value=float(v_n))
+                    self.summary_writer.add_summary(summary, eps_count)
 
-                if train:
-                    summary.value.add(tag='Losses/Value Loss',
-                                      simple_value=float(v_l))
-                    summary.value.add(tag='Losses/Policy Loss',
-                                      simple_value=float(p_l))
-                    summary.value.add(tag='Losses/Entropy',
-                                      simple_value=float(e_l))
-                    summary.value.add(tag='Losses/Grad Norm',
-                                      simple_value=float(g_n))
-                    summary.value.add(tag='Losses/Var Norm',
-                                      simple_value=float(v_n))
-                self.summary_writer.add_summary(summary, eps_count)
+                    self.summary_writer.flush()
 
-                self.summary_writer.flush()
+                if self.name == 'worker_0':
+                    sess.run(self.increment)
 
-            if self.name == 'worker_0':
-                sess.run(self.increment)
-
-            eps_count += 1
-            if eps_count > num_epss_end:
-                break
+                eps_count += 1
+                if eps_count > num_epss_end:
+                    break
