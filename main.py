@@ -37,6 +37,9 @@ def main_priors(load_model=False, train=True, gamma=.8, up_net=5,
     if not train:
         data_path = data_path + '/test/'
 
+    if not os.path.exists(data_path):
+        os.makedirs(data_path)
+
     np.savez(data_path + '/experiment_setup.npz', **data)
 
     tf.reset_default_graph()
