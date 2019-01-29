@@ -414,3 +414,66 @@ def plot_trials(folder, num_steps, num_trials):
         plt.ylabel('activity')
         plt.xlabel('time (a.u)')
         plt.yticks([])
+
+
+if __name__ == '__main__':
+    plt.close('all')
+    # experiment duration
+    exp_dur = 10**6
+    # num steps per trial
+    trial_dur = 10
+    # rewards given for: stop fixating, keep fixating, correct, wrong
+    rewards = (-0.1, 0.0, 1.0, -1.0)
+    # number of trials per blocks
+    block_dur = 100
+    # stimulus evidence
+    stim_ev = 0.5
+    # prob. of repeating the stimuli in the positions of previous trial
+    rep_prob = [0.2, 0.8]
+    # discount factor
+    gamma = 0.8
+    # learning rate
+    lr = 1e-3
+    # num units in the network
+    num_units = 32
+    # trials to updated the network weights
+    up_net = 400
+    # network units
+    net = 'ugru'
+    # instance
+    inst = 0
+    # folder where data will be saved
+    main_folder = '/home/molano/priors_project/priors/'
+    # num trials file
+    num_tr = 140000
+    # worker
+    worker = 0
+    test = ''  # '/test'
+    exp = ut.folder_name(gamma=gamma, up_net=up_net, trial_dur=trial_dur,
+                         rep_prob=rep_prob, exp_dur=exp_dur, rewards=rewards,
+                         block_dur=block_dur, num_units=num_units,
+                         stim_ev=stim_ev, network=net, learning_rate=lr,
+                         instance=inst, main_folder=main_folder) +\
+        test + '/trains/train_' + str(worker) + '/trials_stats_0_' +\
+        str(num_tr) + '.npz'
+    data = np.load(exp)
+    start_per = 20000
+    ev = np.reshape(data['evidence'], (1, data['evidence'].shape[0])).copy()
+    perf = np.reshape(data['performance'],
+                      (1, data['performance'].shape[0])).copy()
+    action = np.reshape(data['action'], (1, data['action'].shape[0])).copy()
+    stim_pos = np.reshape(data['stims_position'],
+                          (1, data['stims_position'].shape[0])).copy()
+    plt.figure(figsize=(8, 8), dpi=100)
+    plot_psychometric_curves(ev[:, start_per:], perf[:, start_per:],
+                             action[:, start_per:], blk_dur=block_dur,
+                             figs=True)
+    # plot learning
+    ev = np.reshape(data['evidence'], (1, data['evidence'].shape[0])).copy()
+    perf = np.reshape(data['performance'],
+                      (1, data['performance'].shape[0])).copy()
+    action = np.reshape(data['action'], (1, data['action'].shape[0])).copy()
+    stim_pos = np.reshape(data['stims_position'],
+                          (1, data['stims_position'].shape[0])).copy()
+    plt.figure(figsize=(8, 8), dpi=100)
+    plot_learning(perf, ev, stim_pos, action)
