@@ -235,7 +235,7 @@ def fit_and_plot(evidence, choice, plt_av=False,
             else:
                 plt.plot(x, y, color=color,  label=label
                          + ' b: ' + str(round(popt[1], 3)), lw=0.5)
-                # plt.legend(loc="lower right")
+                plt.legend(loc="lower right")
             plot_dashed_lines(-np.max(evidence), np.max(evidence))
     else:
         av_data = {}
@@ -445,7 +445,7 @@ if __name__ == '__main__':
     # folder where data will be saved
     main_folder = '/home/molano/priors_project/priors/'
     # num trials file
-    num_tr = 140000
+    num_tr = 250000
     # worker
     worker = 0
     test = ''  # '/test'
