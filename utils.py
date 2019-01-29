@@ -81,11 +81,18 @@ def num2str(num):
 
 
 def rm_lines():
+    """
+    remove all lines from the current axis
+    """
     ax = plt.gca()
     ax.clear()
 
 
 def plot_trials_start(trials, minimo, maximo, num_steps, color='k'):
+    """
+    plot dashed lines that indicate the end of the current trial
+    and the start of the next one
+    """
     trials = np.nonzero(trials)[0] - 0.5
     cond = np.logical_and(trials >= 0, trials <= num_steps)
     trials = trials[np.where(cond)]
@@ -101,6 +108,9 @@ def folder_name(gamma=0.8, up_net=5, trial_dur=10,
                 block_dur=200, num_units=32,
                 stim_ev=0.5, network='ugru', learning_rate=10e-3,
                 instance=0, main_folder=''):
+    """
+    build the name of the folder where data are saved
+    """
     return main_folder + '/td_' + str(trial_dur) + '_rp_' +\
         str(list_str(rep_prob)) + '_r_' +\
         str(list_str(rewards)) + '_bd_' + str(block_dur) +\

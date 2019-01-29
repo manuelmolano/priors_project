@@ -5,7 +5,9 @@ import utils as ut
 
 
 def RNN_UGRU(inputs, prev_rewards, a_size, num_units):
-
+    """
+    build the RNN using UGR units. 
+    """
     # create a UGRNNCell
     rnn_cell = tf.contrib.rnn.UGRNNCell(num_units, activation=tf.nn.relu)
 
@@ -38,6 +40,10 @@ def RNN_UGRU(inputs, prev_rewards, a_size, num_units):
 
 
 def process_output(rnn_out, outputs, a_size, num_units):
+    """
+    here we compute the policy (the probability of each action)
+    and the value from the output of the RNN
+    """
     # Actions
     actions = tf.placeholder(shape=[None], dtype=tf.int32)
     actions_onehot = tf.one_hot(actions, a_size, dtype=tf.float32)
