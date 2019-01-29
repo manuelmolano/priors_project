@@ -15,18 +15,14 @@ def main_priors(load_model=False, train=True, gamma=.8, up_net=5,
                 learning_rate=1e-3, instance=0, main_folder=''):
     a_size = 3  # number of actions
     state_size = a_size  # number of inputs
-    if train:
-        test_flag = ''
-    else:
-        test_flag = '_test'
+
     data_path = utils.folder_name(gamma=gamma, up_net=up_net,
                                   trial_dur=trial_dur, rep_prob=rep_prob,
                                   exp_dur=exp_dur, rewards=rewards,
                                   block_dur=block_dur, num_units=num_units,
                                   stim_ev=stim_ev, network=network,
                                   learning_rate=learning_rate,
-                                  instance=instance, main_folder=main_folder,
-                                  t_flag=test_flag)
+                                  instance=instance, main_folder=main_folder)
 
     data = {'trial_dur': trial_dur, 'rep_prob': rep_prob,
             'rewards': rewards, 'stim_ev': stim_ev,
@@ -37,6 +33,9 @@ def main_priors(load_model=False, train=True, gamma=.8, up_net=5,
 
     if not os.path.exists(model_path):
         os.makedirs(model_path)
+
+    if not train:
+        data_path = data_path + '/test/'
 
     np.savez(data_path + '/experiment_setup.npz', **data)
 

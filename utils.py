@@ -100,11 +100,11 @@ def folder_name(gamma=0.8, up_net=5, trial_dur=10,
                 rewards=(-0.1, 0.0, 1.0, -1.0),
                 block_dur=200, num_units=32,
                 stim_ev=0.5, network='ugru', learning_rate=10e-3,
-                instance=0, main_folder='', t_flag=''):
+                instance=0, main_folder=''):
     return main_folder + '/td_' + str(trial_dur) + '_rp_' +\
         str(list_str(rep_prob)) + '_r_' +\
         str(list_str(rewards)) + '_bd_' + str(block_dur) +\
         '_ev_' + str(stim_ev) + '_g_' + str(gamma) + '_lr_' +\
         str(learning_rate) + '_nu_' + str(num_units) + '_un_' + str(up_net) +\
         '_net_' + str(network) + '_ed_' + str(num2str(exp_dur)) +\
-        '_' + str(instance) + t_flag + '/'
+        '_' + str(instance) + '/'
