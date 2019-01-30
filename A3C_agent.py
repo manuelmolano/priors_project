@@ -201,8 +201,13 @@ class Worker():
                     a = np.random.choice(a_dist[0], p=a_dist[0])
                     a = np.argmax(a_dist == a)
                     rnn_state = rnn_state_new
+                    aux = np.floor(self.env.num_tr/self.env.num_tr_svd)
+                    if aux % self.env.sv_pts_stp == 0:
+                        network_activity = rnn_state_new
+                    else:
+                        network_activity = []
                     # new_state, reward, update_net, new_trial
-                    s1, r, d, nt = self.env.step(a)
+                    s1, r, d, nt = self.env.step(a, net_st=network_activity)
                     # save samples for training the network later
                     eps_buffer.append([s, a, r, v[0, 0]])
                     eps_values.append(v[0, 0])

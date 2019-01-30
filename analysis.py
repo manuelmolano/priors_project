@@ -305,7 +305,7 @@ def plot_dashed_lines(minimo, maximo):
 
 
 def plot_trials(folder, num_steps, num_trials):
-    num_rows = 6
+    num_rows = 7
     for ind_sp in range(num_rows):
         plt.subplot(num_rows, 1, ind_sp+1)
         # remove all previous plots
@@ -401,7 +401,7 @@ def plot_trials(folder, num_steps, num_trials):
     # plot neurons' activities
     if len(data['net_state']) != 0:
         activity = data['net_state']
-        plt.subplot(num_rows, 1, 6)
+        plt.subplot(num_rows, 1, 7)
         shape_aux = (activity.shape[0], activity.shape[2])
         activity = np.reshape(activity, shape_aux)[0:num_steps, :]
         maximo = np.max(activity, axis=0).reshape(1, activity.shape[1])

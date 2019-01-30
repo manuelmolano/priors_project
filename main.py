@@ -87,7 +87,6 @@ def main_priors(load_model=False, train=True, gamma=.8, up_net=5,
         coord = tf.train.Coordinator()
         if load_model:
             print('Loading Model...')
-            print(model_load_path)
             ckpt = tf.train.get_checkpoint_state(model_load_path)
             saver.restore(sess, ckpt.model_checkpoint_path)
         else:

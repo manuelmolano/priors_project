@@ -60,6 +60,9 @@ class PriorsEnv():
         self.perf_mat = []
         # summed activity across the trial
         self.action = []
+        # current repeating probability
+        self.rp_mat = []
+        
 
         # point by point parameter mats saved for some trials
         self.all_pts_data = data.data(folder=folder)
@@ -88,7 +91,7 @@ class PriorsEnv():
             print('Saving folder: ' + str(self.folder))
             print('--------------- ----------------- ---------------')
 
-    def step(self, action):
+    def step(self, action, net_st=[]):
         """
         receives an action and returns a reward, a state and flag variables
         that indicate whether to start a new trial and whether to update
@@ -120,6 +123,7 @@ class PriorsEnv():
             self.perf_mat.append(correct)
             self.action.append(action)
             self.ev_mat.append(self.evidence)
+            self.rp_mat.append(self.rep_prob)
             new_st = self.new_trial()
             # check if it is time to update the network
             done = ((self.num_tr-1) % self.upd_net == 0) and (self.num_tr != 1)
@@ -128,12 +132,6 @@ class PriorsEnv():
                 self.save_trials_data()
                 if self.plot_figs:
                     self.output_stats()
-
-            # point by point parameter mats saved for some periods
-            if np.floor(self.num_tr / self.num_tr_svd) % self.sv_pts_stp == 0:
-                self.all_pts_data.update(reward=reward,
-                                         update_net=done,
-                                         action=action, correct=[correct])
 
             # during some episodes I save all data points
             aux = np.floor((self.num_tr-1) / self.num_tr_svd)
@@ -149,14 +147,16 @@ class PriorsEnv():
 
         else:
             new_st = self.get_state()
-            # during some episodes I save all data points
-            if np.floor(self.num_tr / self.num_tr_svd) % self.sv_pts_stp == 0:
-                self.all_pts_data.update(new_state=new_st,
-                                         reward=reward, update_net=done,
-                                         action=action, correct=[correct],
-                                         new_trial=new_trial,
-                                         num_trials=self.num_tr,
-                                         stim_conf=self.int_st)
+        
+        
+        # during some episodes I save all data points
+        if np.floor(self.num_tr / self.num_tr_svd) % self.sv_pts_stp == 0:
+            self.all_pts_data.update(new_state=new_st, net_state=net_st,
+                                     reward=reward, update_net=done,
+                                     action=action, correct=[correct],
+                                     new_trial=new_trial,
+                                     num_trials=self.num_tr,
+                                     stim_conf=self.int_st)
 
         return new_st, reward, done, new_trial
 
@@ -212,13 +212,6 @@ class PriorsEnv():
         # get state
         s = self.get_state()
 
-        # during some episodes I save all data points
-        if np.floor(self.num_tr/self.num_tr_svd) % self.sv_pts_stp == 0:
-            self.all_pts_data.update(new_state=s,
-                                     new_trial=1,
-                                     num_trials=self.num_tr,
-                                     stim_conf=self.int_st)
-
         return s
 
     def save_trials_data(self):
@@ -230,7 +223,8 @@ class PriorsEnv():
         data = {'stims_position': self.stm_pos,
                 'action': self.action,
                 'performance': self.perf_mat,
-                'evidence': self.ev_mat}
+                'evidence': self.ev_mat,
+                'rep_prob': self.rp_mat}
         np.savez(self.folder + '/trials_stats_' +
                  str(self.env_seed) + '_' + str(self.num_tr) + '.npz', **data)
 
