@@ -67,9 +67,13 @@ def list_str(l):
     """
     list to str
     """
-    nice_string = str(l[0])
-    for ind_el in range(1, len(l)):
-        nice_string += '_'+str(l[ind_el])
+    if isinstance(l, list) or isinstance(l, tuple):
+        nice_string = str(l[0])
+        for ind_el in range(1, len(l)):
+            nice_string += '_'+str(l[ind_el])
+    else:
+        nice_string = str(l)
+
     return nice_string
 
 
