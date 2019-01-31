@@ -238,7 +238,7 @@ class PriorsEnv():
         aux_shape = (1, len(self.ev_mat))
         # plot psycho. curves
         plt.figure(self.bias_fig.number)
-        per = 50000
+        per = 20000
         ev = self.ev_mat.copy()
         ev = np.reshape(ev, aux_shape)[np.max([0, len(ev)-per]):]
         perf = self.perf_mat.copy()
